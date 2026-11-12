@@ -1,0 +1,9 @@
+# Start a Lima VM: store the boot 4x faster, then show it working.
+run limactl start
+speed 4
+wait READY. Run
+speed 1
+prompt
+run lima uname -a
+prompt
+sleep 3
