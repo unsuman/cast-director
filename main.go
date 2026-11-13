@@ -21,7 +21,7 @@ type Step struct {
 	Line int
 	Cmd  string
 	Arg  string
-	N    float64 // for speed and sleep
+	N    float64 // for speed, sleep and maxidle
 }
 
 // parse reads a script. It checks every line before anything runs.
@@ -48,7 +48,7 @@ func parse(name string, r io.Reader) ([]Step, error) {
 			if arg != "" {
 				return nil, fail("%s takes no argument", cmd)
 			}
-		case "speed", "sleep":
+		case "speed", "sleep", "maxidle":
 			v, err := strconv.ParseFloat(arg, 64)
 			if err != nil || v < 0 || (cmd == "speed" && v == 0) {
 				return nil, fail("bad number %q", arg)
@@ -96,6 +96,8 @@ func play(rec *Recorder, steps []Step, timeout time.Duration) (Step, error) {
 			rec.SetHidden(false)
 		case "speed":
 			rec.SetSpeed(s.N)
+		case "maxidle":
+			rec.SetMaxIdle(s.N)
 		case "sleep":
 			rec.Sleep(time.Duration(s.N * float64(time.Second)))
 		}

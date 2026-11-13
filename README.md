@@ -52,12 +52,15 @@ One command per line. `#` is a comment (at the start of a line or after a space)
 | `wait TEXT` | Record until TEXT appears (plain text, not a regex) |
 | `prompt` | Wait for the shell prompt (`$ `) |
 | `speed N` | Save what follows N times faster (`1` = normal, `0.5` = slower) |
+| `maxidle N` | Save every pause after this as at most N seconds (`0` = no limit) |
 | `sleep N` | Keep recording for N seconds (decimals OK) |
 | `hide` | Stop recording: setup steps still run, but are not saved |
 | `show` | Start recording again |
 
 `wait` and `prompt` only look at output that came after the last match, so each `prompt` waits for a new prompt.
 `speed` applies to everything after it, also `sleep`: `sleep 2` at `speed 4` is saved as half a second.
+
+`maxidle` works like `asciinema rec -i`: no screen stays still for longer than N seconds in the `.cast`, so you don't need to know in advance where the slow parts are. It is applied after `speed` and also shortens `sleep`.
 
 Use `hide` and `show` for setup the viewer should not see. Time spent hidden is left out, and `wait` and `prompt` still work. End the hidden part at a prompt, so the screen still looks right afterwards:
 

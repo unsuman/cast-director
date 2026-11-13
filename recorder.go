@@ -33,8 +33,11 @@ type Recorder struct {
 	vt       float64   // recording time in seconds
 	lastReal time.Time // real time that vt corresponds to
 	speed    float64
-	hidden   bool   // output is not recorded and time does not pass
-	buf      string // output not yet consumed by Wait
+	maxIdle  float64 // longest gap between events in the .cast, 0 = no limit
+	cut      float64 // recording time removed by maxIdle
+	lastOut  float64 // .cast time of the last event
+	hidden   bool    // output is not recorded and time does not pass
+	buf      string  // output not yet consumed by Wait
 	closed   bool
 	err      error // first write error
 
@@ -132,10 +135,16 @@ func (r *Recorder) advance(t time.Time) {
 	}
 }
 
-// event writes one "o" event at the current recording time.
-// The caller must hold r.mu.
+// event writes one "o" event at the current recording time, shortening the
+// gap since the last event to maxIdle. The caller must hold r.mu.
 func (r *Recorder) event(text string) {
-	line, _ := json.Marshal([]any{math.Round(r.vt*1e6) / 1e6, "o", text})
+	t := r.vt - r.cut
+	if r.maxIdle > 0 && t-r.lastOut > r.maxIdle {
+		r.cut += t - r.lastOut - r.maxIdle
+		t = r.lastOut + r.maxIdle
+	}
+	r.lastOut = t
+	line, _ := json.Marshal([]any{math.Round(t*1e6) / 1e6, "o", text})
 	if _, err := r.w.Write(append(line, '\n')); err != nil && r.err == nil {
 		r.err = err
 	}
@@ -147,6 +156,14 @@ func (r *Recorder) SetSpeed(n float64) {
 	defer r.mu.Unlock()
 	r.advance(time.Now()) // time so far counts at the old speed
 	r.speed = n
+}
+
+// SetMaxIdle limits every pause from now on to n seconds in the .cast.
+// 0 removes the limit.
+func (r *Recorder) SetMaxIdle(n float64) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.maxIdle = n
 }
 
 // SetHidden stops (true) or restarts (false) recording. Hidden output is

@@ -20,6 +20,7 @@ prompt
 type echo a#b
 enter
 sleep 3
+maxidle 2
 `
 	steps, err := parse("demo.txt", strings.NewReader(good))
 	if err != nil {
@@ -34,6 +35,7 @@ sleep 3
 		{Line: 8, Cmd: "type", Arg: "echo a#b"},
 		{Line: 9, Cmd: "enter"},
 		{Line: 10, Cmd: "sleep", Arg: "3", N: 3},
+		{Line: 11, Cmd: "maxidle", Arg: "2", N: 2},
 	}
 	if len(steps) != len(want) {
 		t.Fatalf("got %d steps, want %d: %+v", len(steps), len(want), steps)
@@ -168,6 +170,22 @@ func TestHide(t *testing.T) {
 	// Without hide, typing and sleep 2 would take over 3s.
 	if at := find(t, events, "visible\r\n"); at > 2.5 {
 		t.Errorf("visible output at %.2fs, want hidden time left out", at)
+	}
+}
+
+func TestMaxIdle(t *testing.T) {
+	dir := t.TempDir()
+	script := filepath.Join(dir, "demo.txt")
+	os.WriteFile(script, []byte("maxidle 0.5\nrun sleep 2\nprompt\nsleep 2\n"), 0o644)
+	var stderr strings.Builder
+	if code := run([]string{script}, &stderr); code != 0 {
+		t.Fatalf("exit %d: %s", code, stderr.String())
+	}
+	events := readCast(t, filepath.Join(dir, "demo.cast"))
+	for i := 1; i < len(events); i++ {
+		if gap := events[i].time - events[i-1].time; gap > 0.51 {
+			t.Errorf("gap of %.2fs before %q, want at most 0.5s", gap, events[i].text)
+		}
 	}
 }
 
