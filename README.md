@@ -1,5 +1,7 @@
 # cast-director
 
+[![CI](https://github.com/unsuman/cast-director/actions/workflows/ci.yml/badge.svg)](https://github.com/unsuman/cast-director/actions/workflows/ci.yml)
+
 **Script your terminal demos. Speed up the boring parts.**
 
 `cast-director` runs a small script in a real terminal and saves it as an [asciinema](https://asciinema.org) `.cast` file.
