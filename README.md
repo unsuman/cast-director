@@ -4,6 +4,8 @@
 
 **Script your terminal demos. Speed up the boring parts.**
 
+![A Lima VM booting 4× faster, then running uname at normal speed](examples/lima.gif)
+
 `cast-director` runs a small script in a real terminal and saves it as an [asciinema](https://asciinema.org) `.cast` file.
 
 The special part: **the speed can change in the middle of a recording, when some text appears.**
@@ -32,7 +34,7 @@ agg demo.cast demo.gif     # or make a GIF
 
 The timing is saved inside the `.cast` file, so it plays the same everywhere: on a website with [asciinema-player](https://docs.asciinema.org/manual/player/), in a terminal with `asciinema play`, or as a GIF with [agg](https://github.com/asciinema/agg).
 
-See [`examples/lima.txt`](examples/lima.txt) and the recording it made, [`examples/lima.cast`](examples/lima.cast).
+See [`examples/lima.txt`](examples/lima.txt), the recording it made, [`examples/lima.cast`](examples/lima.cast), and the GIF above, made with `agg examples/lima.cast examples/lima.gif --theme monokai --font-size 14`.
 
 ## Install
 
