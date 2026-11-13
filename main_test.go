@@ -21,6 +21,7 @@ type echo a#b
 enter
 sleep 3
 maxidle 2
+key Up ctrl+c
 `
 	steps, err := parse("demo.txt", strings.NewReader(good))
 	if err != nil {
@@ -36,6 +37,7 @@ maxidle 2
 		{Line: 9, Cmd: "enter"},
 		{Line: 10, Cmd: "sleep", Arg: "3", N: 3},
 		{Line: 11, Cmd: "maxidle", Arg: "2", N: 2},
+		{Line: 12, Cmd: "key", Arg: "Up ctrl+c"},
 	}
 	if len(steps) != len(want) {
 		t.Fatalf("got %d steps, want %d: %+v", len(steps), len(want), steps)
@@ -53,6 +55,8 @@ maxidle 2
 		{"sleep -1\n", `demo.txt:1: bad number "-1"`},
 		{"prompt\nwait\n", `demo.txt:2: wait needs text`},
 		{"enter now\n", `demo.txt:1: enter takes no argument`},
+		{"key\n", `demo.txt:1: key needs a key name`},
+		{"key up ctrl+1\n", `demo.txt:1: unknown key "ctrl+1"`},
 	}
 	for _, b := range bad {
 		_, err := parse("demo.txt", strings.NewReader(b.script))
@@ -186,6 +190,25 @@ func TestMaxIdle(t *testing.T) {
 		if gap := events[i].time - events[i-1].time; gap > 0.51 {
 			t.Errorf("gap of %.2fs before %q, want at most 0.5s", gap, events[i].text)
 		}
+	}
+}
+
+func TestKeys(t *testing.T) {
+	dir := t.TempDir()
+	script := filepath.Join(dir, "demo.txt")
+	// Up repeats the last command. Without ctrl+c, the last prompt would
+	// time out while sleep 30 runs.
+	os.WriteFile(script, []byte("run echo $((40+2))\nprompt\nkey up enter\nprompt\nrun sleep 30\nkey ctrl+c\nprompt\n"), 0o644)
+	var stderr strings.Builder
+	if code := run([]string{"-timeout", "5", script}, &stderr); code != 0 {
+		t.Fatalf("exit %d: %s", code, stderr.String())
+	}
+	var all strings.Builder
+	for _, e := range readCast(t, filepath.Join(dir, "demo.cast")) {
+		all.WriteString(e.text)
+	}
+	if n := strings.Count(all.String(), "42\r\n"); n != 2 {
+		t.Errorf("command ran %d times, want 2 (up should repeat it)", n)
 	}
 }
 

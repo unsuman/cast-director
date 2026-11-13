@@ -44,6 +44,13 @@ func parse(name string, r io.Reader) ([]Step, error) {
 			if arg == "" {
 				return nil, fail("%s needs text", cmd)
 			}
+		case "key":
+			if arg == "" {
+				return nil, fail("key needs a key name")
+			}
+			if _, err := keys(arg); err != nil {
+				return nil, fail("%v", err)
+			}
 		case "enter", "prompt", "hide", "show":
 			if arg != "" {
 				return nil, fail("%s takes no argument", cmd)
@@ -73,6 +80,39 @@ func stripComment(line string) string {
 	return line
 }
 
+// specialKeys maps key names to what a terminal sends for them.
+var specialKeys = map[string]string{
+	"enter":     "\r",
+	"tab":       "\t",
+	"space":     " ",
+	"esc":       "\x1b",
+	"backspace": "\x7f",
+	"delete":    "\x1b[3~",
+	"up":        "\x1b[A",
+	"down":      "\x1b[B",
+	"right":     "\x1b[C",
+	"left":      "\x1b[D",
+	"home":      "\x1b[H",
+	"end":       "\x1b[F",
+	"pageup":    "\x1b[5~",
+	"pagedown":  "\x1b[6~",
+}
+
+// keys turns a list like "up ctrl+c enter" into what a terminal sends.
+func keys(list string) ([]string, error) {
+	var out []string
+	for _, name := range strings.Fields(strings.ToLower(list)) {
+		if seq, ok := specialKeys[name]; ok {
+			out = append(out, seq)
+		} else if c, ok := strings.CutPrefix(name, "ctrl+"); ok && len(c) == 1 && c[0] >= 'a' && c[0] <= 'z' {
+			out = append(out, string(rune(c[0]-'a'+1)))
+		} else {
+			return nil, fmt.Errorf("unknown key %q", name)
+		}
+	}
+	return out, nil
+}
+
 // play runs the steps on the recorder.
 func play(rec *Recorder, steps []Step, timeout time.Duration) (Step, error) {
 	for _, s := range steps {
@@ -86,6 +126,9 @@ func play(rec *Recorder, steps []Step, timeout time.Duration) (Step, error) {
 			err = rec.Type(s.Arg)
 		case "enter":
 			err = rec.Enter()
+		case "key":
+			seqs, _ := keys(s.Arg) // checked by parse
+			err = rec.Keys(seqs)
 		case "wait":
 			err = rec.Wait(s.Arg, timeout)
 		case "prompt":

@@ -177,8 +177,17 @@ func (r *Recorder) SetHidden(h bool) {
 
 // Type writes text to the shell one character at a time, like a human.
 func (r *Recorder) Type(text string) error {
+	var chars []string
 	for _, c := range text {
-		if _, err := r.ptmx.WriteString(string(c)); err != nil {
+		chars = append(chars, string(c))
+	}
+	return r.Keys(chars)
+}
+
+// Keys sends each key to the shell, with a typing pause after each one.
+func (r *Recorder) Keys(keys []string) error {
+	for _, k := range keys {
+		if _, err := r.ptmx.WriteString(k); err != nil {
 			return err
 		}
 		time.Sleep(time.Duration(40+rand.IntN(60)) * time.Millisecond)
