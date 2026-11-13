@@ -43,6 +43,8 @@ type Recorder struct {
 
 	changed chan struct{} // signalled when new output arrives
 	done    chan struct{} // closed when the shell's output ends
+
+	typeDelay time.Duration // average pause after each typed key
 }
 
 // NewRecorder creates the .cast file, writes the header and starts bash.
@@ -52,11 +54,12 @@ func NewRecorder(out string, width, height int) (*Recorder, error) {
 		return nil, err
 	}
 	r := &Recorder{
-		file:    f,
-		w:       bufio.NewWriter(f),
-		speed:   1,
-		changed: make(chan struct{}, 1),
-		done:    make(chan struct{}),
+		file:      f,
+		w:         bufio.NewWriter(f),
+		speed:     1,
+		changed:   make(chan struct{}, 1),
+		done:      make(chan struct{}),
+		typeDelay: 70 * time.Millisecond,
 	}
 	header, _ := json.Marshal(struct {
 		Version   int               `json:"version"`
@@ -185,14 +188,22 @@ func (r *Recorder) Type(text string) error {
 }
 
 // Keys sends each key to the shell, with a typing pause after each one.
+// The pause is random between half and one and a half times typeDelay.
 func (r *Recorder) Keys(keys []string) error {
 	for _, k := range keys {
 		if _, err := r.ptmx.WriteString(k); err != nil {
 			return err
 		}
-		time.Sleep(time.Duration(40+rand.IntN(60)) * time.Millisecond)
+		if r.typeDelay > 0 {
+			time.Sleep(r.typeDelay/2 + rand.N(r.typeDelay))
+		}
 	}
 	return nil
+}
+
+// SetTypeSpeed sets the average pause after each typed key. 0 types at once.
+func (r *Recorder) SetTypeSpeed(d time.Duration) {
+	r.typeDelay = d
 }
 
 // Enter presses Enter.

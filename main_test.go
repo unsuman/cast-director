@@ -22,6 +22,7 @@ enter
 sleep 3
 maxidle 2
 key Up ctrl+c
+typespeed 0
 `
 	steps, err := parse("demo.txt", strings.NewReader(good))
 	if err != nil {
@@ -38,6 +39,7 @@ key Up ctrl+c
 		{Line: 10, Cmd: "sleep", Arg: "3", N: 3},
 		{Line: 11, Cmd: "maxidle", Arg: "2", N: 2},
 		{Line: 12, Cmd: "key", Arg: "Up ctrl+c"},
+		{Line: 13, Cmd: "typespeed", Arg: "0", N: 0},
 	}
 	if len(steps) != len(want) {
 		t.Fatalf("got %d steps, want %d: %+v", len(steps), len(want), steps)
@@ -209,6 +211,37 @@ func TestKeys(t *testing.T) {
 	}
 	if n := strings.Count(all.String(), "42\r\n"); n != 2 {
 		t.Errorf("command ran %d times, want 2 (up should repeat it)", n)
+	}
+}
+
+func TestTypeSpeed(t *testing.T) {
+	dir := t.TempDir()
+	script := filepath.Join(dir, "demo.txt")
+	fast := strings.Repeat("x", 40)
+	os.WriteFile(script, []byte("typespeed 0\ntype "+fast+"\ntypespeed 400\ntype zzzz\n"), 0o644)
+	var stderr strings.Builder
+	if code := run([]string{script}, &stderr); code != 0 {
+		t.Fatalf("exit %d: %s", code, stderr.String())
+	}
+	events := readCast(t, filepath.Join(dir, "demo.cast"))
+	// span is the time from the first to the last event containing s.
+	span := func(s string) float64 {
+		first, last := -1.0, 0.0
+		for _, e := range events {
+			if strings.Contains(e.text, s) {
+				if first < 0 {
+					first = e.time
+				}
+				last = e.time
+			}
+		}
+		return last - first
+	}
+	if d := span("x"); d > 0.5 {
+		t.Errorf("typespeed 0 took %.2fs for 40 keys, want almost none", d)
+	}
+	if d := span("z"); d < 0.6 {
+		t.Errorf("typespeed 400 took %.2fs for 4 keys, want at least 0.6s", d)
 	}
 }
 
