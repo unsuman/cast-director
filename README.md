@@ -53,9 +53,21 @@ One command per line. `#` is a comment (at the start of a line or after a space)
 | `prompt` | Wait for the shell prompt (`$ `) |
 | `speed N` | Save what follows N times faster (`1` = normal, `0.5` = slower) |
 | `sleep N` | Keep recording for N seconds (decimals OK) |
+| `hide` | Stop recording: setup steps still run, but are not saved |
+| `show` | Start recording again |
 
 `wait` and `prompt` only look at output that came after the last match, so each `prompt` waits for a new prompt.
 `speed` applies to everything after it, also `sleep`: `sleep 2` at `speed 4` is saved as half a second.
+
+Use `hide` and `show` for setup the viewer should not see. Time spent hidden is left out, and `wait` and `prompt` still work. End the hidden part at a prompt, so the screen still looks right afterwards:
+
+```
+hide
+run cd $(mktemp -d) && git init -q
+prompt
+show
+run git status
+```
 
 The script runs in `bash --norc --noprofile` with the prompt `$ `, so every recording looks the same.
 

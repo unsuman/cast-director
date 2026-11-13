@@ -151,6 +151,26 @@ echo "READY. Run lima to open the shell."
 	}
 }
 
+func TestHide(t *testing.T) {
+	dir := t.TempDir()
+	script := filepath.Join(dir, "demo.txt")
+	os.WriteFile(script, []byte("hide\nrun sleep 2; echo sec''ret\nprompt\nshow\nrun echo visible\nprompt\n"), 0o644)
+	var stderr strings.Builder
+	if code := run([]string{script}, &stderr); code != 0 {
+		t.Fatalf("exit %d: %s", code, stderr.String())
+	}
+	events := readCast(t, filepath.Join(dir, "demo.cast"))
+	for _, e := range events {
+		if strings.Contains(e.text, "secret") {
+			t.Errorf("hidden output was recorded: %q", e.text)
+		}
+	}
+	// Without hide, typing and sleep 2 would take over 3s.
+	if at := find(t, events, "visible\r\n"); at > 2.5 {
+		t.Errorf("visible output at %.2fs, want hidden time left out", at)
+	}
+}
+
 func TestWaitTimeout(t *testing.T) {
 	dir := t.TempDir()
 	script := filepath.Join(dir, "demo.txt")

@@ -44,7 +44,7 @@ func parse(name string, r io.Reader) ([]Step, error) {
 			if arg == "" {
 				return nil, fail("%s needs text", cmd)
 			}
-		case "enter", "prompt":
+		case "enter", "prompt", "hide", "show":
 			if arg != "" {
 				return nil, fail("%s takes no argument", cmd)
 			}
@@ -90,6 +90,10 @@ func play(rec *Recorder, steps []Step, timeout time.Duration) (Step, error) {
 			err = rec.Wait(s.Arg, timeout)
 		case "prompt":
 			err = rec.Wait("$ ", timeout)
+		case "hide":
+			rec.SetHidden(true)
+		case "show":
+			rec.SetHidden(false)
 		case "speed":
 			rec.SetSpeed(s.N)
 		case "sleep":

@@ -33,6 +33,7 @@ type Recorder struct {
 	vt       float64   // recording time in seconds
 	lastReal time.Time // real time that vt corresponds to
 	speed    float64
+	hidden   bool   // output is not recorded and time does not pass
 	buf      string // output not yet consumed by Wait
 	closed   bool
 	err      error // first write error
@@ -110,7 +111,9 @@ func (r *Recorder) output(at time.Time, text string) {
 		return
 	}
 	r.advance(at)
-	r.event(text)
+	if !r.hidden {
+		r.event(text)
+	}
 	r.buf += text
 	select {
 	case r.changed <- struct{}{}:
@@ -119,10 +122,12 @@ func (r *Recorder) output(at time.Time, text string) {
 }
 
 // advance moves the recording clock to real time t at the current speed.
-// The caller must hold r.mu.
+// While hidden, the time is dropped. The caller must hold r.mu.
 func (r *Recorder) advance(t time.Time) {
 	if d := t.Sub(r.lastReal); d > 0 {
-		r.vt += d.Seconds() / r.speed
+		if !r.hidden {
+			r.vt += d.Seconds() / r.speed
+		}
 		r.lastReal = t
 	}
 }
@@ -142,6 +147,15 @@ func (r *Recorder) SetSpeed(n float64) {
 	defer r.mu.Unlock()
 	r.advance(time.Now()) // time so far counts at the old speed
 	r.speed = n
+}
+
+// SetHidden stops (true) or restarts (false) recording. Hidden output is
+// still seen by Wait, and hidden time is left out of the .cast.
+func (r *Recorder) SetHidden(h bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.advance(time.Now())
+	r.hidden = h
 }
 
 // Type writes text to the shell one character at a time, like a human.
