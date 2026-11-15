@@ -1,0 +1,49 @@
+# GoReleaser config: https://goreleaser.com/customization/
+# Test locally without publishing: goreleaser release --snapshot --clean
+version: 2
+
+project_name: cast-director
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0 # creack/pty is pure Go, so no C toolchain is needed
+    goos: [linux, darwin] # no windows: the tool needs a Unix PTY
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: [-s -w]
+
+archives:
+  - formats: [tar.gz]
+    files: [LICENSE, README.md]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^Merge "
+
+homebrew_casks:
+  - name: cast-director
+    homepage: https://github.com/unsuman/cast-director
+    description: Script terminal demos and save them as asciinema .cast files
+    license: Apache-2.0
+    repository:
+      owner: unsuman
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    commit_msg_template: "Update {{ .ProjectName }} to {{ .Tag }}"
+    # The binary is not signed by Apple, so remove the quarantine flag that
+    # would make macOS refuse to run it.
+    hooks:
+      post:
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/cast-director"]
+          end

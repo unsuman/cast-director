@@ -38,9 +38,19 @@ See [`examples/lima.txt`](examples/lima.txt), the recording it made, [`examples/
 
 ## Install
 
+With [Homebrew](https://brew.sh) (macOS and Linux):
+
+```bash
+brew install --cask unsuman/tap/cast-director
+```
+
+With Go:
+
 ```bash
 go install github.com/unsuman/cast-director@latest
 ```
+
+Or download a binary from the [releases page](https://github.com/unsuman/cast-director/releases).
 
 Works on macOS and Linux.
 
