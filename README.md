@@ -50,7 +50,17 @@ With Go:
 go install github.com/unsuman/cast-director@latest
 ```
 
-Or download a binary from the [releases page](https://github.com/unsuman/cast-director/releases).
+Or download a binary from the [releases page](https://github.com/unsuman/cast-director/releases), or use the install script, which picks the right one and checks its checksum:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/unsuman/cast-director/main/install.sh | sh
+```
+
+It installs to `/usr/local/bin` if you can write there, otherwise to `~/.local/bin`. Set `BIN_DIR` to choose another folder, or `VERSION` (e.g. `v0.1.0`) to install an older release:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/unsuman/cast-director/main/install.sh | VERSION=v0.1.0 BIN_DIR=~/bin sh
+```
 
 Works on macOS and Linux.
 
